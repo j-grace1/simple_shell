@@ -1,39 +1,38 @@
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/wait.h>
+#include <unistd.h>
 
-#define MAX_COMMAND_LENGTH 100
+#define BUFFER_SIZE 1024
 
-int main() {
-    char *command;
-    char *args[] = {NULL};
+int main(int argc, char **argv)
+{
+    char buffer[BUFFER_SIZE];
+    char *args[2];
     int status;
 
     while (1) {
-        // Display prompt and get user input
+        // Display prompt
         printf("#cisfun$ ");
-        command = (char *) malloc(MAX_COMMAND_LENGTH * sizeof(char));
-        fgets(command, MAX_COMMAND_LENGTH, stdin);
 
-        // Remove trailing newline character
-        command[strlen(command) - 1] = '\0';
-
-        // Fork a new process to execute the command
-        if (fork() == 0) {
-            // Execute the command
-            execvp(command, args);
-            // If the command couldn't be executed, print an error message and exit
-            perror("Command execution failed");
-            exit(EXIT_FAILURE);
-        } else {
-            // Wait for the child process to finish
-            wait(&status);
+        // Get user input
+        if (!fgets(buffer, BUFFER_SIZE, stdin)) {
+            break;
         }
 
-        // Free allocated memory
-        free(command);
+        // Remove newline character
+        buffer[strcspn(buffer, "\n")] = '\0';
+
+        // Execute command
+        args[0] = buffer;
+        args[1] = NULL;
+
+        if (fork() == 0) {
+            execve(args[0], args, NULL);
+            perror("execve");
+            exit(EXIT_FAILURE);
+        } else {
+            wait(&status);
+        }
     }
 
     return 0;
